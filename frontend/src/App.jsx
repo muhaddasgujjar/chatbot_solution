@@ -1,12 +1,39 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
+const DEMO_USER_ID = import.meta.env.VITE_DEMO_USER_ID || "demo-user";
+const DEMO_USER_ROLE = import.meta.env.VITE_DEMO_USER_ROLE || "all";
 
 export function App() {
   const [query, setQuery] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
   const [feedbackStatus, setFeedbackStatus] = useState({});
+  const [handoffStatus, setHandoffStatus] = useState({});
+  const [connectionStatus, setConnectionStatus] = useState("checking");
+
+  useEffect(() => {
+    const bootstrap = async () => {
+      try {
+        const health = await fetch(`${API_BASE_URL}/health`);
+        if (!health.ok) throw new Error("Health check failed");
+        setConnectionStatus("online");
+
+        await fetch(`${API_BASE_URL}/api/auth/session`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            user_id: DEMO_USER_ID,
+            role: DEMO_USER_ROLE,
+          }),
+        });
+      } catch (error) {
+        setConnectionStatus("offline");
+      }
+    };
+
+    bootstrap();
+  }, []);
 
   const sendFeedback = async (messageIdx, helpful) => {
     const assistantMessage = messages[messageIdx];
@@ -18,7 +45,7 @@ export function App() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          user_id: "demo-user",
+          user_id: DEMO_USER_ID,
           query: assistantMessage.query,
           answer: assistantMessage.text.trim(),
           helpful,
@@ -27,6 +54,27 @@ export function App() {
       setFeedbackStatus((prev) => ({ ...prev, [messageIdx]: "saved" }));
     } catch (error) {
       setFeedbackStatus((prev) => ({ ...prev, [messageIdx]: "error" }));
+    }
+  };
+
+  const requestLiveHandoff = async (messageIdx) => {
+    const transcript = messages
+      .slice(0, messageIdx + 1)
+      .map((msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.text}`);
+    setHandoffStatus((prev) => ({ ...prev, [messageIdx]: "sending" }));
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/integrations/purechat/handoff`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          user_id: DEMO_USER_ID,
+          transcript,
+        }),
+      });
+      if (!response.ok) throw new Error("Handoff request failed");
+      setHandoffStatus((prev) => ({ ...prev, [messageIdx]: "sent" }));
+    } catch (error) {
+      setHandoffStatus((prev) => ({ ...prev, [messageIdx]: "error" }));
     }
   };
 
@@ -52,10 +100,11 @@ export function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           query,
-          user_id: "demo-user",
-          role: "all",
+          user_id: DEMO_USER_ID,
+          role: DEMO_USER_ROLE,
         }),
       });
+      if (!response.ok || !response.body) throw new Error("Chat endpoint failed");
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
       let buffer = "";
@@ -113,7 +162,10 @@ export function App() {
   return (
     <main className="app">
       <section className="chat-card">
-        <header className="chat-header">OU IT Assistant</header>
+        <header className="chat-header">
+          <span>OU IT Assistant</span>
+          <span className={`status-pill ${connectionStatus}`}>{connectionStatus}</span>
+        </header>
         <div className="chat-body" aria-live="polite">
           {messages.map((msg, idx) => (
             <article key={idx} className={`bubble ${msg.role}`}>
@@ -130,6 +182,19 @@ export function App() {
                 </ul>
               )}
               {msg.handoff && <p className="handoff">I recommend live agent handoff.</p>}
+              {msg.handoff && (
+                <div className="handoff-row">
+                  <button
+                    type="button"
+                    onClick={() => requestLiveHandoff(idx)}
+                    disabled={handoffStatus[idx] === "sending"}
+                  >
+                    Contact live agent
+                  </button>
+                  {handoffStatus[idx] === "sent" && <span>Handoff ready</span>}
+                  {handoffStatus[idx] === "error" && <span>Handoff failed</span>}
+                </div>
+              )}
               {msg.role === "assistant" && msg.text.trim().length > 0 && (
                 <div className="feedback-row">
                   <button

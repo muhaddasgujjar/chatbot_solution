@@ -34,6 +34,9 @@ body {
   color: var(--ou-gold);
   font-weight: bold;
   padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
 }
 
 .chat-body {
@@ -107,4 +110,41 @@ body {
   border-radius: 6px;
   padding: 4px 8px;
   cursor: pointer;
+}
+
+.handoff-row {
+  margin-top: 8px;
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.handoff-row button {
+  border: 1px solid #ccc;
+  background: #fff;
+  border-radius: 6px;
+  padding: 4px 8px;
+  cursor: pointer;
+}
+
+.status-pill {
+  font-size: 12px;
+  border-radius: 12px;
+  padding: 2px 8px;
+  text-transform: capitalize;
+}
+
+.status-pill.checking {
+  background: #5b5b5b;
+  color: #fff;
+}
+
+.status-pill.online {
+  background: #2d7a46;
+  color: #fff;
+}
+
+.status-pill.offline {
+  background: #a02727;
+  color: #fff;
 }

@@ -52,6 +52,8 @@ Open `http://localhost:5173`.
 
 For local API endpoint override, edit `frontend/.env`:
 - `VITE_API_BASE_URL=http://localhost:8000`
+- `VITE_DEMO_USER_ID=demo-user`
+- `VITE_DEMO_USER_ROLE=all`
 
 ## 4) New API endpoints (Phase 1.2)
 
