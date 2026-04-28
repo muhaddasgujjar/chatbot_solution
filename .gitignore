@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+
+# Environment files
+.env
+*.env.local
+
+# Data/artifacts
+backend/chroma_db/
+backend/chat_history.jsonl
+backend/chat_feedback.jsonl
+
+# Node/Vite
+node_modules/
+frontend/dist/
+
+# OS/editor
+.DS_Store
+Thumbs.db
