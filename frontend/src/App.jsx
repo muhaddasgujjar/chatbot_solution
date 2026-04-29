@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://localhost:8000";
 const DEMO_USER_ID = import.meta.env.VITE_DEMO_USER_ID || "demo-user";
 const DEMO_USER_ROLE = import.meta.env.VITE_DEMO_USER_ROLE || "all";
+const DEMO_BEARER_TOKEN = import.meta.env.VITE_DEMO_BEARER_TOKEN || "";
 
 export function App() {
   const [query, setQuery] = useState("");
@@ -11,6 +12,11 @@ export function App() {
   const [feedbackStatus, setFeedbackStatus] = useState({});
   const [handoffStatus, setHandoffStatus] = useState({});
   const [connectionStatus, setConnectionStatus] = useState("checking");
+
+  const withAuthHeaders = (headers = {}) => {
+    if (!DEMO_BEARER_TOKEN) return headers;
+    return { ...headers, Authorization: `Bearer ${DEMO_BEARER_TOKEN}` };
+  };
 
   useEffect(() => {
     const bootstrap = async () => {
@@ -21,7 +27,7 @@ export function App() {
 
         await fetch(`${API_BASE_URL}/api/auth/session`, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: withAuthHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({
             user_id: DEMO_USER_ID,
             role: DEMO_USER_ROLE,
@@ -43,7 +49,7 @@ export function App() {
     try {
       await fetch(`${API_BASE_URL}/api/feedback`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: withAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           user_id: DEMO_USER_ID,
           query: assistantMessage.query,
@@ -65,7 +71,7 @@ export function App() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/integrations/purechat/handoff`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: withAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           user_id: DEMO_USER_ID,
           transcript,
@@ -97,13 +103,16 @@ export function App() {
     try {
       const response = await fetch(`${API_BASE_URL}/api/chat`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: withAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           query,
           user_id: DEMO_USER_ID,
           role: DEMO_USER_ROLE,
         }),
       });
+      if (response.status === 401) {
+        throw new Error("Unauthorized token");
+      }
       if (!response.ok || !response.body) throw new Error("Chat endpoint failed");
       const reader = response.body?.getReader();
       const decoder = new TextDecoder();
@@ -149,9 +158,13 @@ export function App() {
         }
       }
     } catch (error) {
+      const fallbackMessage =
+        error?.message === "Unauthorized token"
+          ? "Unauthorized. Set a valid VITE_DEMO_BEARER_TOKEN for auth-enabled backend."
+          : "Could not reach backend API.";
       setMessages((prev) => [
         ...prev.slice(0, -1),
-        { role: "assistant", text: "Could not reach backend API.", sources: [], handoff: false },
+        { role: "assistant", text: fallbackMessage, sources: [], handoff: false },
       ]);
     } finally {
       setQuery("");

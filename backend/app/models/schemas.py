@@ -23,12 +23,16 @@ class ChatResponse(BaseModel):
 
 
 class IngestRequest(BaseModel):
-    urls: List[str]
+    urls: List[str] = Field(default_factory=list)
+    docx_paths: List[str] = Field(default_factory=list)
+    crawl: bool = False
+    max_pages: int = Field(default=1, ge=1, le=2000)
     role_access: str = "all"
 
 
 class IngestResponse(BaseModel):
     ingested_urls: List[str]
+    ingested_docx_paths: List[str] = Field(default_factory=list)
     chunks_upserted: int
 
 
@@ -48,6 +52,14 @@ class SessionInitRequest(BaseModel):
 
 class TdxArticleSearchRequest(BaseModel):
     query: str = Field(min_length=1)
+
+
+class TdxTicketCreateRequest(BaseModel):
+    title: str = Field(min_length=3, max_length=200)
+    description: str = Field(min_length=10, max_length=5000)
+    requester_email: str = Field(min_length=3, max_length=320)
+    priority: str = Field(default="normal")
+    category: str = Field(default="general")
 
 
 class PureChatHandoffRequest(BaseModel):

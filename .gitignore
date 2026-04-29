@@ -10,8 +10,11 @@ __pycache__/
 
 # Data/artifacts
 backend/chroma_db/
+chroma_db/
 backend/chat_history.jsonl
 backend/chat_feedback.jsonl
+scripts/eval-queries.generated.json
+Building an AI Chatbot Solution - Google Gemini.pdf
 
 # Node/Vite
 node_modules/

@@ -1,0 +1,18 @@
+[
+  {
+    "query": "How do I reset my Oakland University password?",
+    "expected_source_contains": "password"
+  },
+  {
+    "query": "How can I contact OU IT support?",
+    "expected_source_contains": "support"
+  },
+  {
+    "query": "How do I connect to campus wifi?",
+    "expected_source_contains": "wifi"
+  },
+  {
+    "query": "How can I create a help desk ticket?",
+    "expected_source_contains": "ticket"
+  }
+]

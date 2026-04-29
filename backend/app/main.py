@@ -9,6 +9,7 @@ from app.api.chat import router as chat_router
 from app.api.feedback import router as feedback_router
 from app.api.ingest import router as ingest_router
 from app.api.integrations import router as integrations_router
+from app.core.auth import AuthError, get_auth_context_from_request
 from app.core.config import settings
 from app.core.observability import (
     check_rate_limit,
@@ -56,6 +57,19 @@ async def observability_middleware(request: Request, call_next):
 
     if not check_rate_limit(client_ip):
         return rate_limit_response(request_id)
+
+    protected_paths = (f"{settings.api_prefix}/chat", f"{settings.api_prefix}/integrations")
+    if settings.auth_enabled and request.url.path.startswith(protected_paths):
+        try:
+            request.state.auth_context = get_auth_context_from_request(request)
+        except AuthError as exc:
+            return JSONResponse(
+                status_code=401,
+                content={"detail": str(exc), "request_id": request_id},
+                headers={"x-request-id": request_id},
+            )
+    else:
+        request.state.auth_context = {}
 
     try:
         response = await call_next(request)
