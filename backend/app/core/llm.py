@@ -26,17 +26,42 @@ def scrub_pii(text: str) -> str:
     return scrubbed
 
 
-def _build_prompt(query: str, context_chunks: List[SourceChunk]) -> str:
+def _audience_instructions(audience_role: str) -> str:
+    r = (audience_role or "all").lower()
+    if r == "student":
+        return (
+            "Audience: current **student** at Oakland University. "
+            "Emphasize student IT (Moodle, student email, registration systems, student software, "
+            "Wi‑Fi, printing, account access). Use clear, step-by-step language appropriate for students."
+        )
+    if r == "faculty":
+        return (
+            "Audience: **faculty or academic staff** at Oakland University. "
+            "Emphasize teaching, research, and staff systems (classroom technology, Workday, "
+            "shared drives, and faculty/staff service desk topics) when the context supports it."
+        )
+    if r == "alumni":
+        return (
+            "Audience: **alumni** of Oakland University. "
+            "Emphasize services available to alumni (transcripts, career resources, public KB articles). "
+            "If the context is clearly for current students or employees only, say so and suggest the right channel."
+        )
+    return "Audience: general Oakland University community member. Provide balanced IT support."
+
+
+def _build_prompt(query: str, context_chunks: List[SourceChunk], audience_role: str) -> str:
     context_text = "\n\n".join(
         f"Source: {chunk.source_url}\nRole: {chunk.role_access}\nContent: {chunk.text}"
         for chunk in context_chunks
     )
+    audience = _audience_instructions(audience_role)
     return (
         "You are the Oakland University UTS Chatbot. Professional and helpful.\n"
+        f"{audience}\n"
         "Rules:\n"
         "- Answer using only the provided context.\n"
         "- Never invent URLs.\n"
-        "- If context is insufficient, ask user to escalate to a human live agent.\n\n"
+        "- If context is insufficient, ask the user to escalate to a human live agent.\n\n"
         f"Context:\n{context_text}\n\n"
         f"User Query:\n{query}"
     )
@@ -72,14 +97,18 @@ def enforce_answer_grounding(answer: str, source_urls: List[str]) -> tuple[str, 
     return sanitized, had_violation
 
 
-async def generate_answer(query: str, context_chunks: List[SourceChunk]) -> str:
+async def generate_answer(
+    query: str,
+    context_chunks: List[SourceChunk],
+    audience_role: str = "all",
+) -> str:
     if settings.llm_provider.lower() != "groq":
         return "Unsupported provider in Phase 1. Set LLM_PROVIDER=groq."
 
     if not settings.groq_api_key:
         return "Groq API key is missing. Set GROQ_API_KEY in your .env file."
 
-    prompt = _build_prompt(scrub_pii(query), context_chunks)
+    prompt = _build_prompt(scrub_pii(query), context_chunks, audience_role)
     payload = {
         "model": settings.groq_model,
         "messages": [{"role": "user", "content": prompt}],

@@ -78,11 +78,13 @@ copy .env.example .env
 npm run dev
 ```
 
-Open `http://localhost:5173`.
+Open `http://localhost:5173` (or `http://127.0.0.1:5173`).
+
+**Sign up / Log in:** The UI starts at a **login screen**. Create an account with email, password, and role (**Student**, **Faculty**, or **Alumni**). After sign-in you land on **Dashboard** (metrics), then open **Chat** for role-aware answers. Sessions and demo passwords are stored only in the browser (`localStorage`).
 
 For local API routing, edit `frontend/.env`:
-- **Recommended:** leave `VITE_API_BASE_URL` empty so Vite proxies `/api` and `/health` to the backend (same-origin style dev).
-- Or set `VITE_API_BASE_URL=http://localhost:8000` if you prefer direct calls.
+- **Recommended:** leave `VITE_API_BASE_URL` empty so Vite proxies `/api` and `/health` to the backend (avoids “Failed to fetch” when mixing `localhost` vs `127.0.0.1`).
+- Or set `VITE_API_BASE_URL=http://localhost:8000`; the client also aligns hostnames when possible.
 - `VITE_DEMO_USER_ID=demo-user`
 - `VITE_DEMO_USER_ROLE=all`
 - `VITE_DEMO_BEARER_TOKEN=<token>` (required when `AUTH_ENABLED=true`)

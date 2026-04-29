@@ -50,7 +50,7 @@ async def chat(payload: ChatRequest, request: Request):
         if source_url and source_url not in seen_sources:
             seen_sources.add(source_url)
             sources.append(source_url)
-    answer = await generate_answer(payload.query, chunks)
+    answer = await generate_answer(payload.query, chunks, effective_role)
     answer, had_grounding_violation = enforce_answer_grounding(answer, sources)
     quality_metrics = build_quality_metrics(
         chunks,

@@ -21,11 +21,24 @@ function Bar({ value, max, label }) {
   );
 }
 
-export function Dashboard({ withAuthHeaders }) {
+const ROLE_TO_SEGMENT = {
+  student: "student",
+  faculty: "faculty",
+  alumni: "alumni",
+  all: "all",
+};
+
+export function Dashboard({ withAuthHeaders, audienceRole = "faculty" }) {
   const [data, setData] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [segment, setSegment] = useState("faculty");
+  const initial = ROLE_TO_SEGMENT[audienceRole] || "faculty";
+  const [segment, setSegment] = useState(initial);
+
+  useEffect(() => {
+    const s = ROLE_TO_SEGMENT[audienceRole];
+    if (s) setSegment(s);
+  }, [audienceRole]);
 
   const load = useCallback(async () => {
     setLoading(true);

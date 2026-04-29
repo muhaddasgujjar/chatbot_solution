@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import { apiUrl } from "./api";
+import { clearSession, getSession } from "./authSession";
 import { Dashboard } from "./Dashboard";
+import { LoginPage } from "./LoginPage";
 
-const DEMO_USER_ID = import.meta.env.VITE_DEMO_USER_ID || "demo-user";
-const DEMO_USER_ROLE = import.meta.env.VITE_DEMO_USER_ROLE || "all";
 const DEMO_BEARER_TOKEN = import.meta.env.VITE_DEMO_BEARER_TOKEN || "";
 
 export function App() {
-  const [page, setPage] = useState("chat");
+  const [session, setSession] = useState(() => getSession());
+  const [page, setPage] = useState("analytics");
   const [query, setQuery] = useState("");
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -15,12 +16,17 @@ export function App() {
   const [handoffStatus, setHandoffStatus] = useState({});
   const [connectionStatus, setConnectionStatus] = useState("checking");
 
+  const userId = session?.userId || "demo-user";
+  const userRole = session?.role || "all";
+
   const withAuthHeaders = useCallback((headers = {}) => {
     if (!DEMO_BEARER_TOKEN) return headers;
     return { ...headers, Authorization: `Bearer ${DEMO_BEARER_TOKEN}` };
   }, []);
 
   useEffect(() => {
+    if (!session) return undefined;
+
     const bootstrap = async () => {
       try {
         const health = await fetch(apiUrl("/health"));
@@ -31,17 +37,32 @@ export function App() {
           method: "POST",
           headers: withAuthHeaders({ "Content-Type": "application/json" }),
           body: JSON.stringify({
-            user_id: DEMO_USER_ID,
-            role: DEMO_USER_ROLE,
+            user_id: userId,
+            role: userRole,
           }),
         });
-      } catch (error) {
+      } catch {
         setConnectionStatus("offline");
       }
     };
 
     bootstrap();
-  }, [withAuthHeaders]);
+    return undefined;
+  }, [session, userId, userRole, withAuthHeaders]);
+
+  const handleLoggedIn = (s) => {
+    setSession(s);
+    setPage("analytics");
+    setMessages([]);
+    setConnectionStatus("checking");
+  };
+
+  const handleLogout = () => {
+    clearSession();
+    setSession(null);
+    setPage("chat");
+    setMessages([]);
+  };
 
   const sendFeedback = async (messageIdx, helpful) => {
     const assistantMessage = messages[messageIdx];
@@ -53,14 +74,14 @@ export function App() {
         method: "POST",
         headers: withAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
-          user_id: DEMO_USER_ID,
+          user_id: userId,
           query: assistantMessage.query,
           answer: assistantMessage.text.trim(),
           helpful,
         }),
       });
       setFeedbackStatus((prev) => ({ ...prev, [messageIdx]: "saved" }));
-    } catch (error) {
+    } catch {
       setFeedbackStatus((prev) => ({ ...prev, [messageIdx]: "error" }));
     }
   };
@@ -75,13 +96,13 @@ export function App() {
         method: "POST",
         headers: withAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
-          user_id: DEMO_USER_ID,
+          user_id: userId,
           transcript,
         }),
       });
       if (!response.ok) throw new Error("Handoff request failed");
       setHandoffStatus((prev) => ({ ...prev, [messageIdx]: "sent" }));
-    } catch (error) {
+    } catch {
       setHandoffStatus((prev) => ({ ...prev, [messageIdx]: "error" }));
     }
   };
@@ -108,8 +129,8 @@ export function App() {
         headers: withAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           query,
-          user_id: DEMO_USER_ID,
-          role: DEMO_USER_ROLE,
+          user_id: userId,
+          role: userRole,
         }),
       });
       if (response.status === 401) {
@@ -163,7 +184,7 @@ export function App() {
       const fallbackMessage =
         error?.message === "Unauthorized token"
           ? "Unauthorized. Set a valid VITE_DEMO_BEARER_TOKEN for auth-enabled backend."
-          : "Could not reach backend API.";
+          : "Could not reach backend API. Ensure the API is running (port 8000) or use an empty VITE_API_BASE_URL with `npm run dev` so requests proxy to the backend.";
       setMessages((prev) => [
         ...prev.slice(0, -1),
         { role: "assistant", text: fallbackMessage, sources: [], handoff: false },
@@ -174,9 +195,30 @@ export function App() {
     }
   };
 
+  if (!session) {
+    return <LoginPage onLoggedIn={handleLoggedIn} />;
+  }
+
   return (
     <main className="app">
+      <header className="app-toolbar">
+        <div className="app-user">
+          <span className="app-user-name">{session.displayName || session.email}</span>
+          <span className="app-user-role">{session.role}</span>
+        </div>
+        <button type="button" className="btn-logout" onClick={handleLogout}>
+          Log out
+        </button>
+      </header>
+
       <nav className="app-nav" aria-label="Primary">
+        <button
+          type="button"
+          className={page === "analytics" ? "nav-btn active" : "nav-btn"}
+          onClick={() => setPage("analytics")}
+        >
+          Dashboard
+        </button>
         <button
           type="button"
           className={page === "chat" ? "nav-btn active" : "nav-btn"}
@@ -184,23 +226,20 @@ export function App() {
         >
           Chat
         </button>
-        <button
-          type="button"
-          className={page === "analytics" ? "nav-btn active" : "nav-btn"}
-          onClick={() => setPage("analytics")}
-        >
-          Analytics
-        </button>
       </nav>
 
       {page === "analytics" ? (
-        <Dashboard withAuthHeaders={withAuthHeaders} />
+        <Dashboard withAuthHeaders={withAuthHeaders} audienceRole={userRole} />
       ) : (
         <section className="chat-card">
           <header className="chat-header">
             <span>OU IT Assistant</span>
             <span className={`status-pill ${connectionStatus}`}>{connectionStatus}</span>
           </header>
+          <p className="chat-role-hint">
+            Answers are tuned for <strong>{userRole}</strong> IT topics using your knowledge base and role-aware
+            retrieval.
+          </p>
           <div className="chat-body" aria-live="polite">
             {messages.map((msg, idx) => (
               <article key={idx} className={`bubble ${msg.role}`}>
