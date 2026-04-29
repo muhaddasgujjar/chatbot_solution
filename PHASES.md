@@ -47,7 +47,23 @@ This file tracks project phases, current status, and the next execution plan.
 
 ## Active Phase
 
-### Phase 4 - RAG Quality, Safety, Governance (In Progress)
+### Phase 5 - Production Readiness & Go-Live (In Progress)
+**Goal:** Deployable, monitorable, and supportable in enterprise.
+
+#### Completed in this iteration
+- Added production Docker stack (`docker-compose.prod.yml`): built frontend (nginx), backend image, named Chroma volume, healthchecks, restart policy
+- Added `frontend/Dockerfile` (multi-stage build) and `frontend/nginx.conf` for static SPA hosting
+- Added `docs/RUNBOOK.md` with prod compose usage, Chroma backup/restore examples, and verification pointer
+- Documented prod compose and CORS/build-arg notes in `README.md`
+
+#### Next up
+- Wire baseline observability targets (dashboards for latency, errors, handoff rate) to your hosting platform
+- Load test against pilot targets; record results in go-live checklist
+- Optional: reverse-proxy `/api` same-origin to simplify CORS in locked-down environments
+
+---
+
+### Phase 4 - RAG Quality, Safety, Governance (Substantially complete)
 **Goal:** Improve answer quality and reduce hallucination risk.
 
 #### Completed in this iteration
@@ -76,54 +92,30 @@ This file tracks project phases, current status, and the next execution plan.
 - Updated eval/sweep scoring to prefer exact `reference_url` path matching for more reliable hit-rate measurement
 - Operational: crawl-ingested OU support KB (seed `https://support.oakland.edu`, up to 750 pages), rebuilt `eval-queries.generated.json` from Chroma, ran eval + sweep; applied best sweep rerank defaults (`RERANK_*` in config)
 
-#### Next up
-- Run rerank sweep on expanded labeled OU query set and apply best-performing configuration
+#### Optional follow-ups
+- Re-run `sweep-rerank.ps1` whenever the labeled OU query set grows materially or KB content shifts
+- Tune chunking or HTML extraction if specific KB pages produce weak chunks
 
 ---
 
-## Remaining Phases
+## Remaining work
 
-### Phase 4 - RAG Quality, Safety, Governance
-**Goal:** Improve answer quality and reduce hallucination risk.
+### Phase 5 (continued)
+- Monitoring dashboards (latency, errors, handoff rate) and alerting on your hosting stack
+- Load/performance test against pilot targets; capture a short go-live checklist
+- **Done:** production Docker profile (`docker-compose.prod.yml`, frontend nginx image), backup/restore notes (`docs/RUNBOOK.md`)
 
-#### Tasks
-- Improve chunking, retrieval scoring, and ranking
-- Add stricter grounding checks and citation policy
-- Expand PII/secret detection rules
-- Add answer quality metrics and fallback thresholds
-
-#### Acceptance Criteria
-- Better relevance on test question set
-- No invented links in responses
-- Unsafe/low-confidence replies consistently trigger handoff
-- Quality tests and smoke tests pass
-
----
-
-### Phase 5 - Production Readiness & Go-Live
-**Goal:** Deployable, monitorable, and supportable in enterprise.
-
-#### Tasks
-- Production Docker profile and environment templates
-- Monitoring dashboards (latency, errors, handoff rate)
-- Backup/restore and runbook documentation
-- Load/performance test and go-live checklist
-
-#### Acceptance Criteria
-- Production deployment runbook complete
-- Observability and alerting active
-- Performance targets met for pilot load
-- Final verification suite passes before release
+### Release acceptance (both phases)
+- Retrieval quality and safety behaviors remain acceptable on your labeled eval set
+- No invented links; low-confidence paths trigger handoff consistently
+- `scripts/verify-all.ps1` passes before release
 
 ---
 
 ## Tomorrow Kickoff Plan
 
-1. Continue **Phase 4** (RAG Quality, Safety, Governance) with retrieval/ranking improvements
-2. Expand safety checks (PII/secret detection + grounding policy coverage)
-3. Add quality metrics to quantify handoff/fallback decisions
-4. Run:
-   - `python -m pytest -q`
-   - `powershell -ExecutionPolicy Bypass -File .\scripts\smoke-test.ps1 -ApiBaseUrl http://127.0.0.1:8000`
-   - `powershell -ExecutionPolicy Bypass -File .\scripts\verify-all.ps1`
+1. Deploy `docker-compose.prod.yml` to a staging host; validate CORS and `VITE_API_BASE_URL`
+2. Hook structured logs / metrics into dashboards (latency p95, 5xx rate, handoff rate)
+3. Run load test at pilot concurrency; document results
+4. Run `powershell -ExecutionPolicy Bypass -File .\scripts\verify-all.ps1`
 

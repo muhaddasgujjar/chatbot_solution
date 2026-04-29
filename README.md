@@ -1,4 +1,4 @@
-# OU Chatbot Solution (Phase 3 In Progress)
+# OU Chatbot Solution (Phase 5 in progress)
 
 Phase 1 provides a Groq-based RAG MVP with:
 - FastAPI backend (`/api/chat`, `/api/ingest`)
@@ -281,6 +281,15 @@ From repo root:
 copy backend\.env.example backend\.env
 docker compose up --build
 ```
+
+Production-oriented compose (built frontend image, named Chroma volume, healthchecks):
+
+```bash
+copy backend\.env.example backend\.env
+docker compose -f docker-compose.prod.yml up --build -d
+```
+
+Set `CORS_ORIGINS` in `backend/.env` to include the UI origin (for example `http://localhost:8080`). Rebuild the frontend image with `VITE_API_BASE_URL` pointing at the API URL browsers use. Operational backup steps and notes: [docs/RUNBOOK.md](docs/RUNBOOK.md).
 
 ## 9) Quick smoke script
 

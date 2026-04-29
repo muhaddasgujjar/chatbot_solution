@@ -1,0 +1,54 @@
+# Production-style stack: built images, named Chroma volume, restarts, healthcheck.
+# Copy backend/.env.example to backend/.env, set secrets and CORS (include the URL you use
+# to open the UI, e.g. http://localhost:8080 if you map frontend to 8080).
+#
+# Build args for the UI (browser-visible API base URL):
+#   docker compose -f docker-compose.prod.yml build --build-arg VITE_API_BASE_URL=https://api.example.com frontend
+#
+# Run: docker compose -f docker-compose.prod.yml up -d
+
+services:
+  backend:
+    build:
+      context: ./backend
+    image: ou-chatbot-backend:prod
+    container_name: ou-chatbot-backend-prod
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    volumes:
+      - ou_chroma_data:/app/chroma_db
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=5)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: http://localhost:8000
+        VITE_DEMO_USER_ID: demo-user
+        VITE_DEMO_USER_ROLE: all
+    image: ou-chatbot-frontend:prod
+    container_name: ou-chatbot-frontend-prod
+    ports:
+      - "8080:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  ou_chroma_data:
