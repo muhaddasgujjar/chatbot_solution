@@ -639,3 +639,26 @@ def test_rerank_chunks_uses_source_url_keyword_signal():
     ]
     ranked = rerank_chunks(query, chunks, top_k=2)
     assert ranked[0].source_url == "https://support.oakland.edu/kb/ticket-request"
+
+
+def test_analytics_dashboard_schema():
+    response = client.get("/api/analytics/dashboard")
+    assert response.status_code == 200
+    payload = response.json()
+    assert "global" in payload and "by_role" in payload
+    assert set(payload["by_role"].keys()) >= {"faculty", "student", "alumni", "all"}
+    g = payload["global"]
+    assert "http_requests" in g and "latency_p95_ms" in g
+
+
+def test_entra_claim_mapping_alumni():
+    payload = {
+        "user_id": "entra-alumni",
+        "department": "Office of Alumni Relations",
+        "job_title": "Guest",
+        "groups": ["alumni-network"],
+    }
+    response = client.post("/api/auth/entra/claims", json=payload)
+    assert response.status_code == 200
+    session = response.json()["session"]
+    assert session["role"] == "alumni"

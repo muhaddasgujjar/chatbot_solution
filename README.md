@@ -80,8 +80,9 @@ npm run dev
 
 Open `http://localhost:5173`.
 
-For local API endpoint override, edit `frontend/.env`:
-- `VITE_API_BASE_URL=http://localhost:8000`
+For local API routing, edit `frontend/.env`:
+- **Recommended:** leave `VITE_API_BASE_URL` empty so Vite proxies `/api` and `/health` to the backend (same-origin style dev).
+- Or set `VITE_API_BASE_URL=http://localhost:8000` if you prefer direct calls.
 - `VITE_DEMO_USER_ID=demo-user`
 - `VITE_DEMO_USER_ROLE=all`
 - `VITE_DEMO_BEARER_TOKEN=<token>` (required when `AUTH_ENABLED=true`)
@@ -391,3 +392,10 @@ This runs:
 - backend pytest suite
 - frontend production build
 - backend runtime smoke script (`health`, `ingest`, `chat`, integration contracts)
+
+## 13) Analytics dashboard and operations
+
+- In the web UI, use **Analytics** to view live in-process metrics: HTTP volume and error rate, API latency (p50/p95), and per-audience chat volume and handoff rate (**Faculty**, **Students**, **Alumni**, **All users**). The same JSON is available at `GET /api/analytics/dashboard` for external dashboards. In production, restrict that route at the API gateway or with network policy if the data is sensitive.
+- Metrics reset when the API process restarts; wire your platform’s log/metrics stack for long-term retention.
+- Load test (health endpoint throughput sample): `powershell -ExecutionPolicy Bypass -File .\scripts\load-test.ps1 -BaseUrl http://127.0.0.1:8000`
+- Go-live checklist: [docs/GO_LIVE_CHECKLIST.md](docs/GO_LIVE_CHECKLIST.md)

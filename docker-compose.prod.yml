@@ -32,7 +32,8 @@ services:
       context: ./frontend
       dockerfile: Dockerfile
       args:
-        VITE_API_BASE_URL: http://localhost:8000
+        # Empty = same-origin; nginx proxies /api and /health to backend.
+        VITE_API_BASE_URL: ""
         VITE_DEMO_USER_ID: demo-user
         VITE_DEMO_USER_ROLE: all
     image: ou-chatbot-frontend:prod

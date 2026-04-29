@@ -3,7 +3,8 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci
 COPY . .
-ARG VITE_API_BASE_URL=http://localhost:8000
+# Empty = same-origin (nginx proxies /api); override for split UI/API hosts.
+ARG VITE_API_BASE_URL=
 ARG VITE_DEMO_USER_ID=demo-user
 ARG VITE_DEMO_USER_ROLE=all
 ARG VITE_DEMO_BEARER_TOKEN=

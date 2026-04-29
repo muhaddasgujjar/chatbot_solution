@@ -9,8 +9,10 @@ from app.api.chat import router as chat_router
 from app.api.feedback import router as feedback_router
 from app.api.ingest import router as ingest_router
 from app.api.integrations import router as integrations_router
+from app.api.analytics import router as analytics_router
 from app.core.auth import AuthError, get_auth_context_from_request
 from app.core.config import settings
+from app.core.metrics import record_http_request
 from app.core.observability import (
     check_rate_limit,
     get_request_id,
@@ -31,6 +33,7 @@ app.include_router(ingest_router, prefix=settings.api_prefix)
 app.include_router(feedback_router, prefix=settings.api_prefix)
 app.include_router(auth_router, prefix=settings.api_prefix)
 app.include_router(integrations_router, prefix=settings.api_prefix)
+app.include_router(analytics_router, prefix=settings.api_prefix)
 
 
 @app.middleware("http")
@@ -53,16 +56,24 @@ async def observability_middleware(request: Request, call_next):
         )
         latency_ms = int((time.perf_counter() - started_at) * 1000)
         log_request(request, response.status_code, latency_ms, request_id)
+        record_http_request(response.status_code, latency_ms)
         return response
 
     if not check_rate_limit(client_ip):
-        return rate_limit_response(request_id)
+        resp = rate_limit_response(request_id)
+        latency_ms = int((time.perf_counter() - started_at) * 1000)
+        log_request(request, resp.status_code, latency_ms, request_id)
+        record_http_request(resp.status_code, latency_ms)
+        return resp
 
     protected_paths = (f"{settings.api_prefix}/chat", f"{settings.api_prefix}/integrations")
     if settings.auth_enabled and request.url.path.startswith(protected_paths):
         try:
             request.state.auth_context = get_auth_context_from_request(request)
         except AuthError as exc:
+            latency_ms = int((time.perf_counter() - started_at) * 1000)
+            log_request(request, 401, latency_ms, request_id)
+            record_http_request(401, latency_ms)
             return JSONResponse(
                 status_code=401,
                 content={"detail": str(exc), "request_id": request_id},
@@ -76,6 +87,7 @@ async def observability_middleware(request: Request, call_next):
     except Exception:
         latency_ms = int((time.perf_counter() - started_at) * 1000)
         log_request(request, 500, latency_ms, request_id)
+        record_http_request(500, latency_ms)
         return JSONResponse(
             status_code=500,
             content={"detail": "Internal server error", "request_id": request_id},
@@ -85,6 +97,7 @@ async def observability_middleware(request: Request, call_next):
     response.headers["x-request-id"] = request_id
     latency_ms = int((time.perf_counter() - started_at) * 1000)
     log_request(request, response.status_code, latency_ms, request_id)
+    record_http_request(response.status_code, latency_ms)
     return response
 
 

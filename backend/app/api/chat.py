@@ -1,10 +1,12 @@
 import json
+import time
 
 from fastapi import APIRouter, Request
 from fastapi.responses import Response, StreamingResponse
 
 from app.core.config import settings
 from app.core.llm import enforce_answer_grounding, generate_answer
+from app.core.metrics import record_chat_turn
 from app.core.quality import build_quality_metrics, should_trigger_handoff
 from app.core.retrieval import retrieve_context
 from app.core.session_store import get_session, infer_role_from_raw_claims
@@ -33,10 +35,11 @@ async def chat(payload: ChatRequest, request: Request):
     auth_context = getattr(request.state, "auth_context", {})
     token_role = infer_role_from_raw_claims(auth_context.get("claims", {})) if auth_context else "all"
     session_role = session.get("role")
-    effective_role = session_role if session_role in {"student", "faculty", "all"} else token_role
-    if effective_role not in {"student", "faculty", "all"}:
+    _roles = {"student", "faculty", "all", "alumni"}
+    effective_role = session_role if session_role in _roles else token_role
+    if effective_role not in _roles:
         effective_role = payload.role
-    if effective_role not in {"student", "faculty", "all"}:
+    if effective_role not in _roles:
         effective_role = "all"
 
     chunks = retrieve_context(payload.query, effective_role, settings.top_k)
@@ -71,9 +74,14 @@ async def chat(payload: ChatRequest, request: Request):
     )
 
     async def sse_stream():
-        yield f"data: {json.dumps({'type': 'start'})}\n\n"
-        for token in answer.split():
-            yield f"data: {json.dumps({'type': 'token', 'value': token + ' '})}\n\n"
-        yield f"data: {json.dumps({'type': 'end', 'helpful_prompt': '[Was this helpful? Y/N]', 'sources': sources, 'confidence': confidence, 'requires_handoff': requires_handoff, 'quality_metrics': quality_metrics})}\n\n"
+        started = time.perf_counter()
+        try:
+            yield f"data: {json.dumps({'type': 'start'})}\n\n"
+            for token in answer.split():
+                yield f"data: {json.dumps({'type': 'token', 'value': token + ' '})}\n\n"
+            yield f"data: {json.dumps({'type': 'end', 'helpful_prompt': '[Was this helpful? Y/N]', 'sources': sources, 'confidence': confidence, 'requires_handoff': requires_handoff, 'quality_metrics': quality_metrics})}\n\n"
+        finally:
+            latency_ms = int((time.perf_counter() - started) * 1000)
+            record_chat_turn(effective_role, latency_ms, requires_handoff)
 
     return StreamingResponse(sse_stream(), media_type="text/event-stream")

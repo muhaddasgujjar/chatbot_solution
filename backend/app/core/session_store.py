@@ -25,7 +25,8 @@ def infer_role_from_claim_attributes(department: str, job_title: str, groups: li
     Deterministic precedence:
     1) faculty match anywhere -> faculty
     2) student match anywhere -> student
-    3) otherwise -> all
+    3) alumni match anywhere -> alumni
+    4) otherwise -> all
     """
     job_title_normalized = str(job_title).lower()
     department_normalized = str(department).lower()
@@ -43,6 +44,12 @@ def infer_role_from_claim_attributes(department: str, job_title: str, groups: li
         or "student" in groups_normalized
     ):
         return "student"
+    if (
+        "alumni" in job_title_normalized
+        or "alumni" in department_normalized
+        or any("alumni" in g for g in groups_normalized)
+    ):
+        return "alumni"
     return "all"
 
 

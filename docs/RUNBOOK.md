@@ -5,9 +5,16 @@
 1. Copy environment files:
    - `backend/.env.example` → `backend/.env`
    - Set `GROQ_API_KEY`, Chroma path stays `./chroma_db` inside the container (volume mount).
-   - Set `CORS_ORIGINS` to include every browser origin that loads the UI (for example `http://localhost:8080` when using the default compose port mapping).
+   - **Same-origin (default stack):** build uses empty `VITE_API_BASE_URL` so the browser calls `/api` and `/health` on the UI host; nginx proxies to the backend. Set `CORS_ORIGINS` to the UI origin (for example `http://localhost:8080`).
+   - **Split origin:** if the UI calls a different API hostname, rebuild with `--build-arg VITE_API_BASE_URL=...` and list both origins in `CORS_ORIGINS`.
 
-2. Build the UI with the **public** API URL your users will call (often the same host as the backend or your API gateway):
+2. Build (same-origin default):
+
+   ```bash
+   docker compose -f docker-compose.prod.yml build
+   ```
+
+   Split-origin example:
 
    ```bash
    docker compose -f docker-compose.prod.yml build --build-arg VITE_API_BASE_URL=https://your-api.example.com frontend
@@ -22,7 +29,12 @@
    - API: `http://localhost:8000` (adjust published ports as needed).
    - UI: `http://localhost:8080` (maps container port 80).
 
-4. Health: `GET /health` on the backend (used by the compose healthcheck).
+4. Health: `GET /health` on the backend (used by the compose healthcheck). When using the nginx proxy, the browser can use the same path as in development: `GET /health` on the UI port forwards to the API.
+
+## Observability
+
+- **In-app:** open the **Analytics** tab in the web UI (or `GET /api/analytics/dashboard` on the API). Metrics are in-process and reset on restart; they include HTTP error rates, API latency, and per-audience chat and handoff rates (faculty, student, alumni, all).
+- **Logs:** use `x-request-id` and structured JSON `request_completed` events in your log aggregator.
 
 ## Chroma backup and restore
 

@@ -52,14 +52,18 @@ This file tracks project phases, current status, and the next execution plan.
 
 #### Completed in this iteration
 - Added production Docker stack (`docker-compose.prod.yml`): built frontend (nginx), backend image, named Chroma volume, healthchecks, restart policy
-- Added `frontend/Dockerfile` (multi-stage build) and `frontend/nginx.conf` for static SPA hosting
-- Added `docs/RUNBOOK.md` with prod compose usage, Chroma backup/restore examples, and verification pointer
-- Documented prod compose and CORS/build-arg notes in `README.md`
+- Added `frontend/Dockerfile` (multi-stage build) and `frontend/nginx.conf` for static SPA hosting with **`/api/` and `/health` reverse-proxy** to backend (same-origin browser calls)
+- Added `docs/RUNBOOK.md` with prod compose usage, Chroma backup/restore examples, verification pointer, **Analytics** / metrics notes
+- Added **in-process metrics** (`app/core/metrics.py`), **`GET /api/analytics/dashboard`**, middleware instrumentation (HTTP latency/errors; chat SSE completion + handoff by role)
+- Added **Analytics** UI tab with interactive segment views (**Faculty**, **Students**, **Alumni**, **All users**), volume and handoff-rate bars, auto-refresh
+- Added **Vite dev proxy** for `/api` and `/health`; empty `VITE_API_BASE_URL` = same-origin in dev and prod compose default
+- Added `scripts/load-test.ps1` and **`docs/GO_LIVE_CHECKLIST.md`**
+- Extended **alumni** role in chat, Entra-style claim hints, and retrieval/session alignment
+- Documented analytics, load test, and go-live in `README.md`
 
 #### Next up
-- Wire baseline observability targets (dashboards for latency, errors, handoff rate) to your hosting platform
-- Load test against pilot targets; record results in go-live checklist
-- Optional: reverse-proxy `/api` same-origin to simplify CORS in locked-down environments
+- Export logs/metrics to your hosting dashboards (Datadog, Azure Monitor, CloudWatch, etc.); keep `/api/analytics/dashboard` for quick ops views or gate it at the reverse proxy
+- Run `load-test.ps1` at pilot scale; paste summary into release notes
 
 ---
 
