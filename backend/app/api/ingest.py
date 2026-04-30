@@ -104,6 +104,10 @@ def _extract_docx_text(path: Path) -> str:
     return " ".join(" ".join(p.text.split()) for p in doc.paragraphs if p.text.strip())
 
 
+def _extract_docx_text_from_path(path: Path) -> str:
+    return _extract_docx_text(path)
+
+
 def _extract_pdf_text(path: Path) -> str:
     try:
         import pypdf

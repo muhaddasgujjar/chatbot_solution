@@ -10,10 +10,10 @@ const ROLES = [
 ];
 
 const FEATURES = [
-  { icon: "🎓", label: "Role-aware answers",      desc: "Responses tailored to students, faculty, or alumni" },
-  { icon: "📚", label: "OU knowledge base",       desc: "Grounded in official support.oakland.edu content" },
-  { icon: "🔒", label: "Privacy first",           desc: "PII is stripped before any AI processing" },
-  { icon: "🤝", label: "Live agent handoff",      desc: "Escalate to human support when needed" },
+  { icon: "🎓", label: "Role-aware answers",  desc: "Responses tailored to students, faculty, staff, or alumni" },
+  { icon: "📚", label: "OU knowledge base",   desc: "Grounded in official support.oakland.edu content" },
+  { icon: "🔒", label: "Privacy first",       desc: "PII is stripped before any AI processing" },
+  { icon: "🤝", label: "Live agent handoff",  desc: "Escalate to human support when needed" },
 ];
 
 export function LoginPage({ onLoggedIn }) {
@@ -33,9 +33,9 @@ export function LoginPage({ onLoggedIn }) {
       let session;
       if (mode === "signup") {
         if (password.length < 6) throw new Error("Password must be at least 6 characters.");
-        session = signup({ email, password, displayName, role });
+        session = await signup({ email, password, displayName, role });
       } else {
-        session = login({ email, password });
+        session = await login({ email, password });
       }
       onLoggedIn(session);
     } catch (err) {
@@ -58,13 +58,13 @@ export function LoginPage({ onLoggedIn }) {
           personalised to your role — available 24 / 7.
         </p>
         <div className="login-features">
-          {FEATURES.map((f) => (
+          {FEATURES.map((f, i) => (
             <motion.div
               key={f.label}
               className="login-feature"
               initial={{ opacity: 0, x: -16 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: FEATURES.indexOf(f) * 0.08 + 0.3, duration: 0.35 }}
+              transition={{ delay: i * 0.08 + 0.3, duration: 0.35 }}
             >
               <div className="login-feature-icon">{f.icon}</div>
               <div>
@@ -94,7 +94,6 @@ export function LoginPage({ onLoggedIn }) {
               : "Sign in to continue to your dashboard."}
           </p>
 
-          {/* Toggle */}
           <div className="login-toggle" role="tablist">
             {["login", "signup"].map((m) => (
               <button
@@ -200,8 +199,8 @@ export function LoginPage({ onLoggedIn }) {
           </form>
 
           <p className="login-demo-note">
-            Accounts are stored in this browser only (localStorage).<br />
-            No data is sent to external identity providers in demo mode.
+            Your account is securely stored and accessible from any device.<br />
+            No data is sent to external identity providers.
           </p>
         </motion.div>
       </div>

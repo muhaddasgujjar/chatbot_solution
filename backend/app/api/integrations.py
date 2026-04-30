@@ -139,7 +139,8 @@ async def tdx_article_search(payload: TdxArticleSearchRequest, request: Request)
 
 @router.post("/tdx/tickets/create")
 async def tdx_ticket_create(payload: TdxTicketCreateRequest, request: Request):
-    _require_roles(request, {"student", "faculty", "staff", "alumni", "all"})
+    # Faculty (and role-mapped "all") may create tickets; students are blocked (Phase 3 RBAC).
+    _require_roles(request, {"faculty", "all"})
     enabled = bool(settings.tdx_base_url and settings.tdx_api_token)
     if not enabled:
         return {

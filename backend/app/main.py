@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse, Response
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.chat import router as chat_router
+from app.api.conversations import router as conversations_router
 from app.api.feedback import router as feedback_router
 from app.api.ingest import router as ingest_router
 from app.api.integrations import router as integrations_router
@@ -19,6 +20,10 @@ from app.core.observability import (
     log_request,
     rate_limit_response,
 )
+from app.db import engine, Base
+import app.models.db_models  # noqa: F401 — registers ORM models with Base
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title=settings.app_name)
 app.add_middleware(
@@ -29,6 +34,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 app.include_router(chat_router, prefix=settings.api_prefix)
+app.include_router(conversations_router, prefix=settings.api_prefix)
 app.include_router(ingest_router, prefix=settings.api_prefix)
 app.include_router(feedback_router, prefix=settings.api_prefix)
 app.include_router(auth_router, prefix=settings.api_prefix)

@@ -11,3 +11,7 @@ python-docx
 pypdf
 python-multipart
 pytest
+sqlalchemy
+psycopg2-binary
+bcrypt
+PyJWT

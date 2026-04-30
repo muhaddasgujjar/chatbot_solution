@@ -9,6 +9,13 @@ class Settings(BaseSettings):
     api_prefix: str = "/api"
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
+    # Database
+    database_url: str = "sqlite:///./chatbot.db"
+
+    # JWT
+    jwt_secret: str = "change-this-secret-in-production-use-32-random-chars"
+    jwt_expire_minutes: int = 10080  # 7 days
+
     llm_provider: str = "groq"
     groq_api_key: str = ""
     groq_model: str = "llama-3.1-8b-instant"

@@ -1,12 +1,6 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, Field
-
-
-class ChatRequest(BaseModel):
-    query: str = Field(min_length=1)
-    user_id: str = Field(min_length=1)
-    role: str = Field(default="all")
 
 
 class SourceChunk(BaseModel):
@@ -80,3 +74,31 @@ class EntraClaimsRequest(BaseModel):
     department: str = ""
     job_title: str = ""
     groups: List[str] = Field(default_factory=list)
+
+
+class SignupRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+    password: str = Field(min_length=6)
+    display_name: str = Field(default="")
+    role: str = Field(default="all")
+
+
+class LoginRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=320)
+    password: str = Field(min_length=1)
+
+
+class TokenResponse(BaseModel):
+    token: str
+    user_id: str
+    email: str
+    display_name: Optional[str]
+    role: str
+    is_admin: bool
+
+
+class ChatRequest(BaseModel):
+    query: str = Field(min_length=1)
+    user_id: str = Field(min_length=1)
+    role: str = Field(default="all")
+    conversation_id: Optional[str] = None

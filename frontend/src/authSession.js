@@ -1,8 +1,12 @@
-const SESSION_KEY = "ou_chat_session_v1";
-const ACCOUNTS_KEY = "ou_chat_accounts_v1";
+import { apiUrl } from "./api";
 
-function hashPw(pw) {
-  return btoa(unescape(encodeURIComponent(`${pw}::ou_demo_salt`)));
+const SESSION_KEY = "ou_chat_session_v2";
+const _LEGACY_KEY  = "ou_chat_session_v1";
+
+// Clear any leftover legacy localStorage auth on first load
+if (typeof localStorage !== "undefined") {
+  localStorage.removeItem(_LEGACY_KEY);
+  localStorage.removeItem("ou_chat_accounts_v1");
 }
 
 export function getSession() {
@@ -10,10 +14,7 @@ export function getSession() {
     const raw = localStorage.getItem(SESSION_KEY);
     if (!raw) return null;
     const s = JSON.parse(raw);
-    if (!s?.email || !s?.role) return null;
-    if (!s.userId) {
-      s.userId = emailKey(s.email).replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "") || "user";
-    }
+    if (!s?.token || !s?.email) return null;
     return s;
   } catch {
     return null;
@@ -28,60 +29,39 @@ export function clearSession() {
   localStorage.removeItem(SESSION_KEY);
 }
 
-function loadAccounts() {
-  try {
-    return JSON.parse(localStorage.getItem(ACCOUNTS_KEY) || "{}");
-  } catch {
-    return {};
-  }
-}
-
-function saveAccounts(acc) {
-  localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(acc));
-}
-
-function emailKey(email) {
-  return email.trim().toLowerCase();
-}
-
-function userIdFromEmail(email) {
-  const k = emailKey(email).replace(/[^a-z0-9]+/g, "_").replace(/^_|_$/g, "");
-  return k || "user";
-}
-
-export function signup({ email, password, displayName, role }) {
-  const accounts = loadAccounts();
-  const key = emailKey(email);
-  if (!key) throw new Error("Enter a valid email.");
-  if (accounts[key]) throw new Error("An account with this email already exists.");
-  const row = {
-    passwordHash: hashPw(password),
-    role,
-    displayName: (displayName || "").trim() || key.split("@")[0],
-    userId: userIdFromEmail(email),
+function _buildSession(data) {
+  return {
+    token: data.token,
+    userId: data.user_id,
+    email: data.email,
+    displayName: data.display_name || data.email.split("@")[0],
+    role: data.role || "all",
+    isAdmin: !!data.is_admin,
   };
-  accounts[key] = row;
-  saveAccounts(accounts);
-  return finalizeSession(key, row);
 }
 
-export function login({ email, password }) {
-  const accounts = loadAccounts();
-  const key = emailKey(email);
-  const row = accounts[key];
-  if (!row || row.passwordHash !== hashPw(password)) {
-    throw new Error("Invalid email or password.");
-  }
-  return finalizeSession(key, row);
+export async function signup({ email, password, displayName, role }) {
+  const res = await fetch(apiUrl("/api/auth/register"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, display_name: displayName || "", role: role || "all" }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Sign-up failed.");
+  const session = _buildSession(data);
+  setSession(session);
+  return session;
 }
 
-function finalizeSession(email, row) {
-  const session = {
-    email,
-    userId: row.userId,
-    displayName: row.displayName,
-    role: row.role,
-  };
+export async function login({ email, password }) {
+  const res = await fetch(apiUrl("/api/auth/login"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password }),
+  });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.detail || "Login failed.");
+  const session = _buildSession(data);
   setSession(session);
   return session;
 }
