@@ -128,7 +128,7 @@ def _extract_text_from_path(file_path: str) -> str:
         raise HTTPException(400, f"File not found: {file_path}")
     suffix = path.suffix.lower()
     if suffix == ".docx":
-        return _extract_docx_text(path)
+        return _extract_docx_text_from_path(path)
     if suffix == ".pdf":
         return _extract_pdf_text(path)
     raise HTTPException(400, f"Unsupported file type '{suffix}'. Only .pdf and .docx are accepted.")
@@ -142,7 +142,11 @@ def ingest(payload: IngestRequest):
     if not has_input:
         raise HTTPException(400, "Provide at least one URL, DOCX path, or PDF path.")
     if payload.max_pages > settings.ingest_max_crawl_pages:
-        raise HTTPException(400, f"max_pages exceeds limit ({settings.ingest_max_crawl_pages}).")
+        raise HTTPException(
+            400,
+            "Crawl page limit exceeds configured max "
+            f"({settings.ingest_max_crawl_pages}); requested max_pages was {payload.max_pages}.",
+        )
     if len(payload.docx_paths) > settings.ingest_max_docx_files:
         raise HTTPException(400, f"DOCX batch exceeds limit ({settings.ingest_max_docx_files}).")
 
