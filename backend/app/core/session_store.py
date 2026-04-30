@@ -39,6 +39,12 @@ def infer_role_from_claim_attributes(department: str, job_title: str, groups: li
     ):
         return "faculty"
     if (
+        "staff" in job_title_normalized
+        or "staff" in department_normalized
+        or "staff" in groups_normalized
+    ):
+        return "staff"
+    if (
         "student" in job_title_normalized
         or "student" in department_normalized
         or "student" in groups_normalized

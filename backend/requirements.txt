@@ -8,4 +8,6 @@ sentence-transformers
 beautifulsoup4
 requests
 python-docx
+pypdf
+python-multipart
 pytest

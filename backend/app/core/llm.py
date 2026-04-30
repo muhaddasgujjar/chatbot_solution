@@ -40,6 +40,13 @@ def _audience_instructions(audience_role: str) -> str:
             "Emphasize teaching, research, and staff systems (classroom technology, Workday, "
             "shared drives, and faculty/staff service desk topics) when the context supports it."
         )
+    if r == "staff":
+        return (
+            "Audience: **staff** at Oakland University. "
+            "Focus on staff IT systems: Workday, VPN, network access, shared drives, "
+            "Entra/Active Directory accounts, campus software licensing, printing, "
+            "and department-specific IT tools. Provide clear, practical step-by-step guidance."
+        )
     if r == "alumni":
         return (
             "Audience: **alumni** of Oakland University. "

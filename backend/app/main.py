@@ -118,3 +118,5 @@ def preflight(path: str):
             "Access-Control-Allow-Headers": "*",
         },
     )
+
+
