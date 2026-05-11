@@ -610,7 +610,7 @@ export function App() {
       <footer className="app-footer">
         <span>Built by </span>
         <a
-          href="https://github.com/muhaddasbasit260"
+          href="https://github.com/muhaddasgujjar"
           target="_blank"
           rel="noreferrer"
           className="footer-link"
@@ -619,7 +619,7 @@ export function App() {
         </a>
         <span className="footer-sep">·</span>
         <a
-          href="https://github.com/muhaddasbasit260/chatbot-solution"
+          href="https://github.com/muhaddasgujjar/chatbot-solution"
           target="_blank"
           rel="noreferrer"
           className="footer-link"
