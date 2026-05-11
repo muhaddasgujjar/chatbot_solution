@@ -459,6 +459,7 @@ export function App() {
 
       {/* ── Pages ── */}
       <main id="main-content">
+
         <AnimatePresence mode="wait">
           {page === "analytics" && (
             <motion.div
@@ -604,6 +605,28 @@ export function App() {
           )}
         </AnimatePresence>
       </main>
+
+      {/* ── Footer ── */}
+      <footer className="app-footer">
+        <span>Built by </span>
+        <a
+          href="https://github.com/muhaddasbasit260"
+          target="_blank"
+          rel="noreferrer"
+          className="footer-link"
+        >
+          Muhammad Muhaddas
+        </a>
+        <span className="footer-sep">·</span>
+        <a
+          href="https://github.com/muhaddasbasit260/chatbot-solution"
+          target="_blank"
+          rel="noreferrer"
+          className="footer-link"
+        >
+          View on GitHub
+        </a>
+      </footer>
     </motion.div>
   );
 }
