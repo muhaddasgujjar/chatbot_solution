@@ -26,10 +26,12 @@ import app.models.db_models  # noqa: F401 — registers ORM models with Base
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title=settings.app_name)
+_cors_list = [o.strip() for o in settings.cors_origins.split(",") if o.strip()]
+_allow_all = "*" in _cors_list
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[origin.strip() for origin in settings.cors_origins.split(",") if origin.strip()],
-    allow_credentials=True,
+    allow_origins=["*"] if _allow_all else _cors_list,
+    allow_credentials=not _allow_all,
     allow_methods=["*"],
     allow_headers=["*"],
 )

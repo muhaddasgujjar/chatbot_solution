@@ -85,13 +85,24 @@ def upsert_chunks(chunks: List[SourceChunk]) -> int:
 
 
 def retrieve_context(query: str, role: str, top_k: int) -> List[SourceChunk]:
-    query_vector = _embed([query])[0]
+    try:
+        count = _collection.count()
+    except Exception:
+        return []
+    if count == 0:
+        return []
 
-    results = _collection.query(
-        query_embeddings=[query_vector],
-        n_results=top_k,
-        where={"role_access": {"$in": [role, "all"]}},
-    )
+    query_vector = _embed([query])[0]
+    actual_k = min(top_k, count)
+
+    try:
+        results = _collection.query(
+            query_embeddings=[query_vector],
+            n_results=actual_k,
+            where={"role_access": {"$in": [role, "all"]}},
+        )
+    except Exception:
+        return []
 
     docs = results.get("documents", [[]])[0]
     metas = results.get("metadatas", [[]])[0]

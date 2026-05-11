@@ -387,7 +387,7 @@ export function App() {
       const text =
         err?.message === "Unauthorized token"
           ? "Session expired — please log in again."
-          : "Could not reach the assistant. Make sure the backend is running on port 8000.";
+          : "Could not reach the assistant. Please try again in a moment.";
       setMessages((prev) => [
         ...prev.slice(0, -1),
         { role: "assistant", text, sources: [], handoff: false },
